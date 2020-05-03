@@ -34,7 +34,7 @@ Router::HandlerBase::handleRequestWithData(Request& req) {
 
 Router::~Router() = default;
 
-RequestHandler::RequestResult
+RequestResult
 Router::onIncomingRequest(Request& request) {
     for (auto& handler : handlers_) {
         if (handler->canHandle(request))
@@ -45,7 +45,7 @@ Router::onIncomingRequest(Request& request) {
     return RequestResult::Failure;
 }
 
-RequestHandler::RequestResult
+RequestResult
 Router::onRequest(Request& request) {
     // FIXME: Maybe save the handler after onIncomingRequest
     for (auto& handler : handlers_) {

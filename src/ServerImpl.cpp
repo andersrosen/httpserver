@@ -89,8 +89,10 @@ ServerImpl::createNewRequest(const char* url) {
 int
 ServerImpl::onRequestBegin(InternalRequest* req) {
     // Auth stuff - look up handler, etc
-    handler_->onIncomingRequest(*req);
-    return MHD_YES;
+    auto result = handler_->onIncomingRequest(*req);
+    if (result == RequestResult::Success)
+        return MHD_YES;
+    return MHD_NO; // Failure - close the connection
 }
 
 int
@@ -99,9 +101,10 @@ ServerImpl::onRequestData(
     const char* uploadData,
     std::size_t& uploadDataSize
 ) {
-    handler_->onRequest(*req);
-    // Actual request handling
-    return MHD_NO;
+    auto result = handler_->onRequest(*req, uploadData, uploadDataSize);
+    if (result == RequestResult::Success)
+        return MHD_YES;
+    return MHD_NO; // Failure - close the connection
 }
 
 void

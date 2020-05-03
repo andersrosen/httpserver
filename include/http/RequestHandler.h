@@ -39,15 +39,15 @@ struct Invoker {
 } // namespace Internal
 
 
+enum class RequestResult {
+    Success,
+    Failure,
+};
+
 class RequestHandler {
     friend class Internal::ServerImpl;
 
   public:
-    enum class RequestResult {
-        Success,
-        Failure,
-        Continue,
-    };
 
     virtual ~RequestHandler();
 
