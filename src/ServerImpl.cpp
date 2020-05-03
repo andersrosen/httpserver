@@ -89,11 +89,6 @@ ServerImpl::createNewRequest(const char* url) {
 int
 ServerImpl::onRequestBegin(InternalRequest* req) {
     // Auth stuff - look up handler, etc
-    std::cerr << "full url = " << req->getFullUrl()
-              << ", url = " << req->getUrl()
-              << ", method = " << req->getMethod()
-              << ", version = " << req->getHttpVersion()
-              << std::endl;
     handler_->onIncomingRequest(*req);
     return MHD_YES;
 }
