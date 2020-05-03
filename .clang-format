@@ -1,0 +1,18 @@
+BasedOnStyle: Mozilla
+Standard: Cpp11
+AlignAfterOpenBracket: false
+AlignEscapedNewlinesLeft: true
+AlwaysBreakAfterReturnType: TopLevel
+BreakBeforeBraces: Attach
+BreakConstructorInitializers: BeforeComma
+BreakInheritanceList: BeforeComma
+ColumnLimit: 120
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+ConstructorInitializerIndentWidth: 0
+IndentCaseLabels: false
+NamespaceIndentation: None
+IndentWidth: 4
+ContinuationIndentWidth: 4
+PointerAlignment: Left
+
+
