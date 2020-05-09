@@ -18,20 +18,14 @@ template<int ArgCount>
 struct Invoker {
     template<typename Func, typename... Args, int Boundary = ArgCount>
     static typename std::enable_if_t<sizeof...(Args) < Boundary, void>
-    run(std::smatch& match,
-        Request& req,
-        Func&& func,
-        Args... args) {
+    run(std::smatch& match, Request& req, Func&& func, Args... args) {
         std::string val = match[sizeof...(Args) + 1].str();
         run<Func>(match, req, std::forward<Func>(func), std::forward<Args>(args)..., std::move(val));
     }
 
     template<typename Func, typename... Args, int Boundary = ArgCount>
     static typename std::enable_if_t<sizeof...(Args) == Boundary, void>
-    run(std::smatch& match,
-        Request& req,
-        Func&& func,
-        Args... args) {
+    run(std::smatch& match, Request& req, Func&& func, Args... args) {
         func(req, std::forward<Args>(args)...);
     }
 };
