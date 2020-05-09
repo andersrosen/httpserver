@@ -32,7 +32,7 @@ struct Invoker {
         Request& req,
         Func&& func,
         Args... args) {
-        func(req, std::move(args)...);
+        func(req, std::forward<Args>(args)...);
     }
 };
 
