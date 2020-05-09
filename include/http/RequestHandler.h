@@ -46,9 +46,10 @@ class RequestHandler {
     virtual ~RequestHandler();
 
   protected:
-    virtual RequestResult onIncomingRequest(Request &request) = 0;
-    virtual RequestResult onRequest(Request &request) = 0;
-    virtual void onRequestDone(Request &request) = 0;
+    virtual RequestResult onIncomingRequest(Request& request) = 0;
+    virtual RequestResult onRequest(Request& request) = 0;
+    virtual RequestResult onRequest(Request& request, const char* data, std::size_t* byteCount) = 0;
+    virtual void onRequestDone(Request& request) = 0;
 };
 
 

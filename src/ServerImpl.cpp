@@ -24,19 +24,21 @@ requestCallback(void* cls,
     std::size_t* uploadDataSize,
     void** conCls
 ) {
-
+    using State = ARo::Http::Internal::InternalRequest::State;
     auto impl = static_cast<ARo::Http::Internal::ServerImpl*>(cls);
     auto req = static_cast<ARo::Http::Internal::InternalRequest*>(*conCls);
 
-    if (!req->getConnection()) {
+    if (req->getState() == State::Uninitialized) {
         // First call
         req->setConnection(connection);
         req->setUrl(url);
         req->setHttpVersion(version);
         req->setMethod(method);
+        req->setState(State::Initialized);
         return impl->onRequestBegin(req);
     }
-    return impl->onRequestData(req, uploadData, *uploadDataSize);
+
+    return impl->onRequestData(req, uploadData, uploadDataSize);
 }
 
 static void
@@ -99,11 +101,19 @@ int
 ServerImpl::onRequestData(
     InternalRequest* req,
     const char* uploadData,
-    std::size_t& uploadDataSize
+    std::size_t* uploadDataSize
 ) {
-    auto result = handler_->onRequest(*req, uploadData, uploadDataSize);
-    if (result == RequestResult::Success)
-        return MHD_YES;
+    if (req->getState() == InternalRequest::State::Initialized) {
+        req->setState(InternalRequest::State::Ongoing);
+        if (uploadData == nullptr) {
+            // There was no payload with this request
+            if (handler_->onRequest(*req) == RequestResult::Success)
+                return MHD_YES; // Everything fine
+            return MHD_NO; // Failure - close the connection
+        }
+    }
+    if (handler_->onRequest(*req, uploadData, uploadDataSize) == RequestResult::Success)
+        return MHD_YES; // Everything fine
     return MHD_NO; // Failure - close the connection
 }
 

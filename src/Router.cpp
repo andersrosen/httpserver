@@ -28,15 +28,15 @@ void
 Router::HandlerBase::handleRequest(Request& req) {
 }
 
-void
-Router::HandlerBase::handleRequestWithData(Request& req) {
-}
-
 Router::~Router() = default;
 
 RequestResult
 Router::onIncomingRequest(Request& request) {
-    for (auto& handler : handlers_) {
+    for (auto& handler : handlersWithNoPayload_) {
+        if (handler->canHandle(request))
+            return RequestResult::Success;
+    }
+    for (auto& handler : handlersWithPayload_) {
         if (handler->canHandle(request))
             return RequestResult::Success;
     }
@@ -48,11 +48,40 @@ Router::onIncomingRequest(Request& request) {
 RequestResult
 Router::onRequest(Request& request) {
     // FIXME: Maybe save the handler after onIncomingRequest
-    for (auto& handler : handlers_) {
+    for (auto& handler : handlersWithNoPayload_) {
         if (handler->canHandle(request)) {
             handler->handleRequest(request);
             return RequestResult::Success;
         }
+    }
+
+    // Something is wrong if we didn't return in the loop above
+    return RequestResult::Failure;
+}
+
+RequestResult
+Router::onRequest(Request& request, const char* data, std::size_t* byteCount) {
+    // FIXME: Maybe save the handler after onIncomingRequest
+    for (auto& handler : handlersWithPayload_) {
+        if (!handler->canHandle(request))
+            continue;
+
+        if (*byteCount == 0) {
+            // We got the last chunk of data
+            handler->handleRequest(request);
+            return RequestResult::Failure; // If no response had been enqueued
+        }
+
+        auto &reqdata = request.getRequestDataAsBytes();
+
+        if (handler->maxRequestSize > 0 && (reqdata.size() + *byteCount) < handler->maxRequestSize) {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            reqdata.insert(reqdata.end(), data, data + *byteCount);
+            *byteCount = 0;
+            return RequestResult::Success;
+        }
+
+        return RequestResult::Failure;
     }
 
     // Something is wrong if we didn't return in the loop above

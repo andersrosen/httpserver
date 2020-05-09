@@ -14,8 +14,15 @@ class InternalRequest final : public ARo::Http::Request {
     friend class ServerImpl;
 
     using KeyValues = std::multimap<std::string, std::string>;
+    enum class State {
+        Uninitialized, // The request object is mostly uninitialized. The only thing available is the full URL
+        Initialized, // The object is initialized. The callback has not yet been called
+        Ongoing // The request handling is ongoing. The request callback has already been called at least once
+    };
 
   private:
+    State state_ = State::Uninitialized;
+
     MHD_Connection* connection_ = nullptr;
 
     mutable bool haveHeaders_ = false;
@@ -31,6 +38,8 @@ class InternalRequest final : public ARo::Http::Request {
     void populateQueryArgs() const;
 
   public:
+    State getState() const;
+    void setState(State state);
     MHD_Connection *getConnection() const;
     void setConnection(MHD_Connection *connection);
     void setUrl(const char *url);

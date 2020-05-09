@@ -32,7 +32,7 @@ class ServerImpl {
 
     InternalRequest *createNewRequest(const char* url);
     int onRequestBegin(InternalRequest *req);
-    int onRequestData(InternalRequest *req, const char *uploadData, std::size_t &uploadDataSize);
+    int onRequestData(InternalRequest *req, const char *uploadData, std::size_t *uploadDataSize);
     void onRequestCompleted(InternalRequest *req, MHD_RequestTerminationCode);
 };
 

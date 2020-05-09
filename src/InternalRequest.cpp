@@ -104,6 +104,16 @@ InternalRequest::getQueryArgValues(std::string_view key) const {
     return result;
 }
 
+InternalRequest::State
+InternalRequest::getState() const {
+    return state_;
+}
+
+void
+InternalRequest::setState(State state) {
+    state_ = state;
+}
+
 MHD_Connection*
 InternalRequest::getConnection() const {
     return connection_;
