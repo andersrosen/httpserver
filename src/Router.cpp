@@ -3,7 +3,11 @@
 
 namespace ARo::Http {
 
-Router::HandlerBase::HandlerBase(std::string_view method, std::string_view pattern, std::size_t maxRequestSize, PayloadHandling payloadHandling)
+Router::HandlerBase::HandlerBase(
+    std::string_view method,
+    std::string_view pattern,
+    std::size_t maxRequestSize,
+    PayloadHandling payloadHandling)
 : payloadHandling(payloadHandling), method(method), maxRequestSize(maxRequestSize), re(std::string(pattern))
 {}
 
