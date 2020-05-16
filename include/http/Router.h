@@ -192,61 +192,73 @@ class Router final {
     ~Router();
 
     template<typename Func>
-    void handleNoPayload(std::string_view method, std::string_view pattern, Func func) {
+    void handleRequestWithNoPayload(
+        std::string_view method,
+        std::string_view pattern,
+        Func func) {
+
         handlers_.emplace_back(std::make_unique<HandlerNoPayload<Func>>(method, pattern, func));
     }
 
     template<typename Func>
-    void handleVectorPayload(std::string_view method, std::string_view pattern, std::size_t maxSize, Func func) {
+    void handleRequestWithVectorPayload(
+        std::string_view method,
+        std::string_view pattern,
+        std::size_t maxSize,
+        Func func) {
+
         handlers_.emplace_back(std::make_unique<HandlerVectorPayload<Func>>(method, pattern, maxSize, func));
     }
 
     template<typename Func>
-    void handleStringPayload(std::string_view method, std::string_view pattern, std::size_t maxSize, Func func) {
+    void handleRequestWithStringPayload(
+        std::string_view method,
+        std::string_view pattern,
+        std::size_t maxSize,
+        Func func) {
+
         handlers_.emplace_back(std::make_unique<HandlerStringPayload<Func>>(method, pattern, maxSize, func));
     }
 
     template<typename Func>
     void handleGet(std::string_view pattern, Func func) {
-        handleNoPayload("GET", pattern, func);
+        handleRequestWithNoPayload("GET", pattern, func);
     }
 
     template<typename Func>
     void handleHead(std::string_view pattern, Func func) {
-        handleNoPayload("HEAD", pattern, func);
+        handleRequestWithNoPayload("HEAD", pattern, func);
     }
 
     template<typename Func>
     void handleDelete(std::string_view pattern, Func func) {
-        handleNoPayload("DELETE", pattern, func);
+        handleRequestWithNoPayload("DELETE", pattern, func);
     }
 
     template<typename Func>
     void handleOptions(std::string_view pattern, Func func) {
-        handleNoPayload("OPTIONS", pattern, func);
+        handleRequestWithNoPayload("OPTIONS", pattern, func);
     }
 
     template<typename Func>
-    void handlePostVectorPayload(std::string_view pattern, std::size_t maxDataSize, Func func) {
-        handleVectorPayload("POST", pattern, maxDataSize, func);
+    void handlePostWithBinaryPayload(std::string_view pattern, std::size_t maxDataSize, Func func) {
+        handleRequestWithVectorPayload("POST", pattern, maxDataSize, func);
     }
 
     template<typename Func>
-    void handlePostStringPayload(std::string_view pattern, std::size_t maxDataSize, Func func) {
-        handleStringPayload("POST", pattern, maxDataSize, func);
+    void handlePostWithStringPayload(std::string_view pattern, std::size_t maxDataSize, Func func) {
+        handleRequestWithStringPayload("POST", pattern, maxDataSize, func);
     }
 
     template<typename Func>
-    void handlePutVectorPayload(std::string_view pattern, std::size_t maxDataSize, Func func) {
-        handleVectorPayload("PUT", pattern, maxDataSize, func);
+    void handlePutWithVectorPayload(std::string_view pattern, std::size_t maxDataSize, Func func) {
+        handleRequestWithVectorPayload("PUT", pattern, maxDataSize, func);
     }
 
     template<typename Func>
-    void handlePutStringPayload(std::string_view pattern, std::size_t maxDataSize, Func func) {
-        handleStringPayload("PUT", pattern, maxDataSize, func);
+    void handlePutWithStringPayload(std::string_view pattern, std::size_t maxDataSize, Func func) {
+        handleRequestWithStringPayload("PUT", pattern, maxDataSize, func);
     }
-
-    // FIXME: Add handlers for custom methods?
 
     // FIXME: Add handlers for basic auth, not found, method not allowed
 
