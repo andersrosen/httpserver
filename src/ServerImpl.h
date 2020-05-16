@@ -10,7 +10,7 @@
 #include "InternalRequest.h"
 
 namespace ARo::Http {
-    class RequestHandler;
+    class Router;
 }
 
 namespace ARo::Http::Internal {
@@ -22,13 +22,13 @@ class ServerImpl {
 
     std::unique_ptr<struct MHD_Daemon, MhdDaemonDeleter> daemon_;
     std::vector<InternalRequest> requests_;
-    std::unique_ptr<RequestHandler> handler_;
+    std::unique_ptr<Router> router_;
 
   public:
     explicit ServerImpl(std::uint16_t port);
     ~ServerImpl();
 
-    void setHandler(std::unique_ptr<RequestHandler> handler);
+    void setHandler(std::unique_ptr<Router> handler);
 
     InternalRequest *createNewRequest(const char* url);
     int onRequestBegin(InternalRequest *req);

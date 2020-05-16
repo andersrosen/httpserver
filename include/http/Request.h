@@ -15,8 +15,6 @@ class Request {
     std::string url_;
     std::string fullUrl_;
 
-    std::vector<std::uint8_t> requestData_;
-
   public:
     explicit Request(std::string_view fullUrl);
     virtual ~Request();
@@ -35,10 +33,6 @@ class Request {
     virtual std::vector<std::string> getHeaderValues(std::string_view header) const = 0;
     virtual std::optional<std::string> getQueryArg(std::string_view key) const = 0;
     virtual std::vector<std::string> getQueryArgValues(std::string_view key) const = 0;
-
-    std::string_view getRequestData() const &;
-    std::vector<std::uint8_t>& getRequestDataAsBytes() &;
-    const std::vector<std::uint8_t>& getRequestDataAsBytes() const &;
 
 //    Response respondWithString(int responseCode, std::string_view contentType, std::string_view data);
 };

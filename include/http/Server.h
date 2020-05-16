@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <memory>
 
-#include "RequestHandler.h"
+#include "Router.h"
 
 namespace ARo::Http
 {
@@ -21,7 +21,7 @@ class Server
     Server(std::uint16_t port);
     ~Server();
 
-    Server &setHandler(std::unique_ptr<RequestHandler> handler) &;
+    Server &setHandler(std::unique_ptr<Router> handler) &;
 };
 
-}
+} // namespace ARo::Http

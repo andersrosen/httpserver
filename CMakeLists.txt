@@ -43,7 +43,6 @@ target_sources(httpserver PRIVATE
     src/InternalRequest.cpp
     src/InternalRequest.h
     src/Request.cpp
-    src/RequestHandler.cpp
     src/Response.cpp
     src/Router.cpp
     src/Server.cpp
@@ -52,7 +51,6 @@ target_sources(httpserver PRIVATE
 
     include/http/FunctionTraits.h
     include/http/Request.h
-    include/http/RequestHandler.h
     include/http/Response.h
     include/http/Router.h
     include/http/Server.h

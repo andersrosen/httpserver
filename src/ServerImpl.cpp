@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "../include/http/Request.h"
-#include "../include/http/RequestHandler.h"
+#include "../include/http/Router.h"
 
 ///////////////////////////////////////////////////////////////////////////
 // libmicrohttpd callbacks
@@ -79,8 +79,8 @@ ServerImpl::ServerImpl(std::uint16_t port)
 ServerImpl::~ServerImpl() = default;
 
 void
-ServerImpl::setHandler(std::unique_ptr<RequestHandler> handler) {
-    handler_ = std::move(handler);
+ServerImpl::setHandler(std::unique_ptr<Router> handler) {
+    router_ = std::move(handler);
 }
 
 InternalRequest*
@@ -91,7 +91,7 @@ ServerImpl::createNewRequest(const char* url) {
 int
 ServerImpl::onRequestBegin(InternalRequest* req) {
     // Auth stuff - look up handler, etc
-    auto result = handler_->onIncomingRequest(*req);
+    auto result = router_->onIncomingRequest(*req);
     if (result == RequestResult::Success)
         return MHD_YES;
     return MHD_NO; // Failure - close the connection
@@ -107,12 +107,12 @@ ServerImpl::onRequestData(
         req->setState(InternalRequest::State::Ongoing);
         if (uploadData == nullptr) {
             // There was no payload with this request
-            if (handler_->onRequest(*req) == RequestResult::Success)
+            if (router_->onRequest(*req) == RequestResult::Success)
                 return MHD_YES; // Everything fine
             return MHD_NO; // Failure - close the connection
         }
     }
-    if (handler_->onRequest(*req, uploadData, uploadDataSize) == RequestResult::Success)
+    if (router_->onRequest(*req, uploadData, uploadDataSize) == RequestResult::Success)
         return MHD_YES; // Everything fine
     return MHD_NO; // Failure - close the connection
 }
@@ -123,7 +123,7 @@ ServerImpl::onRequestCompleted(
     MHD_RequestTerminationCode terminationCode
 ) {
     // Clean up
-    handler_->onRequestDone(*req);
+    router_->onRequestDone(*req);
     delete req; // NOLINT(cppcoreguidelines-owning-memory)
 }
 

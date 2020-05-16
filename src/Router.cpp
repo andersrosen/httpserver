@@ -1,9 +1,10 @@
 #include "../include/http/Router.h"
+#include "InternalRequest.h"
 
 namespace ARo::Http {
 
-Router::HandlerBase::HandlerBase(std::string_view method, std::string_view pattern, std::size_t maxRequestSize)
-: method(method), maxRequestSize(maxRequestSize), re(std::string(pattern))
+Router::HandlerBase::HandlerBase(std::string_view method, std::string_view pattern, std::size_t maxRequestSize, PayloadHandling payloadHandling)
+: payloadHandling(payloadHandling), method(method), maxRequestSize(maxRequestSize), re(std::string(pattern))
 {}
 
 Router::HandlerBase::~HandlerBase() = default;
@@ -28,15 +29,19 @@ void
 Router::HandlerBase::handleRequest(Request& req) {
 }
 
+void
+Router::HandlerBase::handleRequest(ARo::Http::Request& req, const std::vector<std::uint8_t>& payload) {
+}
+
+void
+Router::HandlerBase::handleRequest(ARo::Http::Request& req, std::string_view payload) {
+}
+
 Router::~Router() = default;
 
 RequestResult
-Router::onIncomingRequest(Request& request) {
-    for (auto& handler : handlersWithNoPayload_) {
-        if (handler->canHandle(request))
-            return RequestResult::Success;
-    }
-    for (auto& handler : handlersWithPayload_) {
+Router::onIncomingRequest(Internal::InternalRequest& request) {
+    for (auto& handler : handlers_) {
         if (handler->canHandle(request))
             return RequestResult::Success;
     }
@@ -46,9 +51,9 @@ Router::onIncomingRequest(Request& request) {
 }
 
 RequestResult
-Router::onRequest(Request& request) {
+Router::onRequest(Internal::InternalRequest& request) {
     // FIXME: Maybe save the handler after onIncomingRequest
-    for (auto& handler : handlersWithNoPayload_) {
+    for (auto& handler : handlers_) {
         if (handler->canHandle(request)) {
             handler->handleRequest(request);
             return RequestResult::Success;
@@ -60,23 +65,26 @@ Router::onRequest(Request& request) {
 }
 
 RequestResult
-Router::onRequest(Request& request, const char* data, std::size_t* byteCount) {
+Router::onRequest(Internal::InternalRequest& request, const char* data, std::size_t* byteCount) {
     // FIXME: Maybe save the handler after onIncomingRequest
-    for (auto& handler : handlersWithPayload_) {
+    for (auto& handler : handlers_) {
         if (!handler->canHandle(request))
             continue;
 
         if (*byteCount == 0) {
             // We got the last chunk of data
-            handler->handleRequest(request);
+            if (handler->payloadHandling == HandlerBase::PayloadHandling::StringInMemory) {
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                const char* pl = reinterpret_cast<const char*>(request.payload_.data());
+                handler->handleRequest(request, std::string_view(pl, request.payload_.size()));
+            } else if (handler->payloadHandling == HandlerBase::PayloadHandling::VectorInMemory)
+                handler->handleRequest(request, request.payload_);
             return RequestResult::Failure; // If no response had been enqueued
         }
 
-        auto &reqdata = request.getRequestDataAsBytes();
-
-        if (handler->maxRequestSize > 0 && (reqdata.size() + *byteCount) < handler->maxRequestSize) {
+        if (handler->maxRequestSize > 0 && (request.payload_.size() + *byteCount) < handler->maxRequestSize) {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            reqdata.insert(reqdata.end(), data, data + *byteCount);
+            request.payload_.insert(request.payload_.end(), data, data + *byteCount);
             *byteCount = 0;
             return RequestResult::Success;
         }
@@ -89,7 +97,7 @@ Router::onRequest(Request& request, const char* data, std::size_t* byteCount) {
 }
 
 void
-Router::onRequestDone(Request& request) {
+Router::onRequestDone(Internal::InternalRequest& request) {
 
 }
 

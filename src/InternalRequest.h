@@ -20,6 +20,7 @@ class InternalRequest final : public ARo::Http::Request {
         Ongoing // The request handling is ongoing. The request callback has already been called at least once
     };
 
+    std::vector<std::uint8_t> payload_;
   private:
     State state_ = State::Uninitialized;
 
@@ -29,6 +30,7 @@ class InternalRequest final : public ARo::Http::Request {
     mutable KeyValues headers_;
     mutable bool haveQueryArgs_ = false;
     mutable KeyValues queryArgs_;
+
 
     InternalRequest(const char* fullUrl);
 

@@ -28,21 +28,5 @@ Request::getFullUrl() const & {
     return fullUrl_;
 }
 
-std::string_view
-Request::getRequestData() const & {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    return std::string_view(reinterpret_cast<const char*>(requestData_.data()), requestData_.size());
-}
-
-std::vector<std::uint8_t>&
-Request::getRequestDataAsBytes() & {
-    return requestData_;
-}
-
-const std::vector<std::uint8_t>&
-Request::getRequestDataAsBytes() const & {
-    return requestData_;
-}
-
 } // namespace ARo::Http
 

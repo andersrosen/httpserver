@@ -11,7 +11,7 @@ Server::Server(std::uint16_t port)
 Server::~Server() = default;
 
 Server &
-Server::setHandler(std::unique_ptr<ARo::Http::RequestHandler> handler) & {
+Server::setHandler(std::unique_ptr<Router> handler) & {
     impl_->setHandler(std::move(handler));
     return *this;
 }
