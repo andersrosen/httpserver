@@ -34,11 +34,19 @@ Router::HandlerBase::handleRequest(Request& req) {
 }
 
 void
-Router::HandlerBase::handleRequest(ARo::Http::Request& req, const std::vector<std::uint8_t>& payload) {
+Router::HandlerBase::handleRequest(Request& req, const std::vector<std::uint8_t>& payload) {
 }
 
 void
-Router::HandlerBase::handleRequest(ARo::Http::Request& req, std::string_view payload) {
+Router::HandlerBase::handleRequest(Request& req, std::string_view payload) {
+}
+
+void
+Router::HandlerBase::handleRequest(Request& req, std::string_view payload, std::any& userData) {
+}
+
+void
+Router::HandlerBase::handleRequest(Request& req, const std::vector<std::uint8_t>& payload, std::any& userData) {
 }
 
 Router::~Router() = default;
@@ -77,23 +85,61 @@ Router::onRequest(Internal::InternalRequest& request, const char* data, std::siz
 
         if (*byteCount == 0) {
             // We got the last chunk of data
-            if (handler->payloadHandling == HandlerBase::PayloadHandling::StringInMemory) {
+            switch (handler->payloadHandling) {
+            case HandlerBase::PayloadHandling::StringInMemory: {
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-                const char* pl = reinterpret_cast<const char*>(request.payload_.data());
-                handler->handleRequest(request, std::string_view(pl, request.payload_.size()));
-            } else if (handler->payloadHandling == HandlerBase::PayloadHandling::VectorInMemory)
-                handler->handleRequest(request, request.payload_);
+                const char* pl = reinterpret_cast<const char*>(request.payload.data());
+                handler->handleRequest(request, std::string_view(pl, request.payload.size()));
+                break;
+            }
+            case HandlerBase::PayloadHandling::VectorInMemory: {
+                handler->handleRequest(request, request.payload);
+                break;
+            }
+            case HandlerBase::PayloadHandling::LargeString: {
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                const char* pl = reinterpret_cast<const char*>(request.payload.data());
+                handler->handleRequest(request, std::string_view(pl, request.payload.size()), request.userData);
+                break;
+            }
+            default:
+                break;
+            }
+
             return RequestResult::Failure; // If no response had been enqueued
-        }
+        } else {
 
-        if (handler->maxRequestSize > 0 && (request.payload_.size() + *byteCount) < handler->maxRequestSize) {
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            request.payload_.insert(request.payload_.end(), data, data + *byteCount);
-            *byteCount = 0;
-            return RequestResult::Success;
+            switch (handler->payloadHandling) {
+            case HandlerBase::PayloadHandling::StringInMemory:
+                [[fallthrough]];
+            case HandlerBase::PayloadHandling::VectorInMemory: {
+                if (handler->maxRequestSize > 0 && (request.payload.size() + *byteCount) < handler->maxRequestSize) {
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                    request.payload.insert(request.payload.end(), data, data + *byteCount);
+                    *byteCount = 0;
+                }
+                // FIXME: Handle oversize request payload!
+                break;
+            }
+            case HandlerBase::PayloadHandling::LargeVector: {
+                // FIXME: Unnecessary copying!
+                std::vector<std::uint8_t> vec;
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                vec.insert(vec.begin(), data, data + *byteCount);
+                handler->handleRequest(request, vec, request.userData);
+                *byteCount = 0;
+                break;
+            }
+            case HandlerBase::PayloadHandling::LargeString: {
+                handler->handleRequest(request, data, request.userData);
+                *byteCount = 0;
+                break;
+            }
+            default:
+                break;
+            }
         }
-
-        return RequestResult::Failure;
+        return RequestResult::Success;
     }
 
     // Something is wrong if we didn't return in the loop above

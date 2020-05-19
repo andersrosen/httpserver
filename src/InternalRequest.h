@@ -2,6 +2,7 @@
 
 #include <microhttpd.h>
 #include <map>
+#include <any>
 
 #include "../include/http/Request.h"
 
@@ -20,7 +21,9 @@ class InternalRequest final : public ARo::Http::Request {
         Ongoing // The request handling is ongoing. The request callback has already been called at least once
     };
 
-    std::vector<std::uint8_t> payload_;
+    std::vector<std::uint8_t> payload;
+    std::any userData;
+
   private:
     State state_ = State::Uninitialized;
 
