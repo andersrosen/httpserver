@@ -8,6 +8,8 @@
 
 namespace ARo::Http {
 
+enum class RequestResponse;
+
 class Request {
   protected:
     std::string httpVersion_;

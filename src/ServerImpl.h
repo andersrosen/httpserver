@@ -10,7 +10,7 @@
 #include "InternalRequest.h"
 
 namespace ARo::Http {
-    class Router;
+    class OldRouter;
 }
 
 namespace ARo::Http::Internal {
@@ -28,7 +28,7 @@ class ServerImpl {
     explicit ServerImpl(std::uint16_t port);
     ~ServerImpl();
 
-    void setHandler(std::unique_ptr<Router> handler);
+    void setRouter(std::unique_ptr<Router> handler);
 
     InternalRequest *createNewRequest(const char* url);
     int onRequestBegin(InternalRequest *req);

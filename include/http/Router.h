@@ -1,410 +1,70 @@
 #pragma once
 
-#include <cstring>
-#include <functional>
-#include <regex>
+#include "internal/RequestHandler.h"
 #include <string_view>
-#include <vector>
-#include <any>
 
-#include "FunctionTraits.h"
-#include "Request.h"
-
-namespace ARo::Http {
-
-namespace Internal {
+namespace ARo::Http::Internal {
 
 class ServerImpl;
 class InternalRequest;
 
-template<int ArgCount>
-struct Invoker {
-
-    // Handler with no request payload
-
-    template<typename Func, typename... Args, int Boundary = ArgCount>
-    static typename std::enable_if_t<sizeof...(Args) < Boundary, void> run(std::smatch& match,
-        Request& req,
-        Func&& func,
-        Args... args) {
-        run<Func>(match, req, std::forward<Func>(func), std::forward<Args>(args)..., match[sizeof...(Args) + 1].str());
-    }
-
-    template<typename Func, typename... Args, int Boundary = ArgCount>
-    static typename std::enable_if_t<sizeof...(Args) == Boundary, void> run(std::smatch& match,
-        Request& req,
-        Func&& func,
-        Args... args) {
-        func(req, std::forward<Args>(args)...);
-    }
-
-    // Handler with in-memory request payload as uint8_t vector
-
-    template<typename Func, typename... Args, int Boundary = ArgCount>
-    static typename std::enable_if_t<sizeof...(Args) < Boundary, void> run(std::smatch& match,
-        Request& req,
-        const std::vector<std::uint8_t>& payload,
-        Func&& func,
-        Args... args) {
-        run<Func>(match,
-            req,
-            payload,
-            std::forward<Func>(func),
-            std::forward<Args>(args)...,
-            match[sizeof...(Args) + 1].str());
-    }
-
-    template<typename Func, typename... Args, int Boundary = ArgCount>
-    static typename std::enable_if_t<sizeof...(Args) == Boundary, void> run(std::smatch& match,
-        Request& req,
-        const std::vector<std::uint8_t>& payload,
-        Func&& func,
-        Args... args) {
-        func(req, payload, std::forward<Args>(args)...);
-    }
-
-    // Handler with in-memory request payload as std::string_view
-
-    template<typename Func, typename... Args, int Boundary = ArgCount>
-    static typename std::enable_if_t<sizeof...(Args) < Boundary, void>
-    run(std::smatch& match,
-        Request& req,
-        std::string_view payload,
-        Func&& func,
-        Args... args) {
-
-        run<Func>(match,
-            req,
-            payload,
-            std::forward<Func>(func),
-            std::forward<Args>(args)...,
-            match[sizeof...(Args) + 1].str());
-    }
-
-    template<typename Func, typename... Args, int Boundary = ArgCount>
-    static typename std::enable_if_t<sizeof...(Args) == Boundary, void>
-    run(std::smatch& match,
-        Request& req,
-        std::string_view payload,
-        Func&& func,
-        Args... args) {
-
-        func(req, payload, std::forward<Args>(args)...);
-    }
-
-    // Handler with streamed (i.e. multiple calls) request payload as uint8_t vector
-
-    template<typename Func, typename... Args, int Boundary = ArgCount>
-    static typename std::enable_if_t<sizeof...(Args) < Boundary, void>
-    run(std::smatch& match,
-        Request& req,
-        const std::vector<std::uint8_t>& payload,
-        std::any& userData,
-        Func&& func,
-        Args... args) {
-
-        run<Func>(match,
-                  req,
-                  payload,
-                  userData,
-                  std::forward<Func>(func),
-                  std::forward<Args>(args)...,
-                  match[sizeof...(Args) + 1].str());
-    }
-
-    template<typename Func, typename... Args, int Boundary = ArgCount>
-    static typename std::enable_if_t<sizeof...(Args) == Boundary, void>
-    run(std::smatch& match,
-        Request& req,
-        const std::vector<std::uint8_t>& payload,
-        std::any& userData,
-        Func&& func,
-        Args... args) {
-
-        func(req, payload, userData, std::forward<Args>(args)...);
-    }
-
-    // Handler with streamed (i.e. multiple calls) request payload as std::string_view
-
-    template<typename Func, typename... Args, int Boundary = ArgCount>
-    static typename std::enable_if_t<sizeof...(Args) < Boundary, void>
-    run(std::smatch& match,
-        Request& req,
-        std::string_view payload,
-        std::any& userData,
-        Func&& func,
-        Args... args) {
-
-        run<Func>(match,
-                  req,
-                  payload,
-                  userData,
-                  std::forward<Func>(func),
-                  std::forward<Args>(args)...,
-                  match[sizeof...(Args) + 1].str());
-    }
-
-    template<typename Func, typename... Args, int Boundary = ArgCount>
-    static typename std::enable_if_t<sizeof...(Args) == Boundary, void>
-    run(std::smatch& match,
-        Request& req,
-        std::string_view payload,
-        std::any& userData,
-        Func&& func,
-        Args... args) {
-
-        func(req, payload, userData, std::forward<Args>(args)...);
-    }
-};
-
 } // namespace ARo::Http::Internal
+
+
+namespace ARo::Http {
 
 enum class RequestResult {
     Success,
     Failure,
 };
 
-class Router final {
+class Router {
     friend class Internal::ServerImpl;
-
-    struct HandlerBase {
-        enum class PayloadHandling {
-            Ignore,
-            StringInMemory,
-            VectorInMemory,
-            LargeString,
-            LargeVector
-        };
-
-        PayloadHandling payloadHandling;
-        std::string method;
-        std::size_t maxRequestSize;
-        std::regex re;
-        std::smatch lastMatch;
-
-        HandlerBase(std::string_view method, std::string_view pattern, std::size_t maxRequestSize, PayloadHandling payloadHandling);
-
-        virtual ~HandlerBase();
-
-        virtual std::size_t getRequiredParameterCount() const = 0;
-
-        virtual bool canHandle(Request& req);
-
-        virtual void handleRequest(Request& req);
-
-        virtual void handleRequest(Request& req, const std::vector<std::uint8_t>& payload);
-
-        virtual void handleRequest(Request& req, std::string_view payload);
-
-        virtual void handleRequest(Request& req, const std::vector<std::uint8_t>& payload, std::any& userData);
-
-        virtual void handleRequest(Request& req, std::string_view payload, std::any& userData);
-    };
-
-    template<typename Func>
-    struct HandlerNoPayload : public HandlerBase {
-        Func func;
-
-        static constexpr std::size_t Arity = Internal::function_traits<Func>::arity;
-
-        HandlerNoPayload(std::string_view method, std::string_view pattern, Func handlerFunc)
-        : HandlerBase(method, pattern, -1, PayloadHandling::Ignore), func(handlerFunc)
-        {}
-
-        std::size_t getRequiredParameterCount() const override { return Arity - 1; }
-
-        void handleRequest(Request& req) override {
-            Internal::Invoker<Arity - 1>::run(lastMatch, req, func);
-        }
-    };
-
-    template<typename Func>
-    struct HandlerVectorPayload : public HandlerBase {
-        Func func;
-
-        static constexpr std::size_t Arity = Internal::function_traits<Func>::arity;
-
-        HandlerVectorPayload(std::string_view method, std::string_view pattern, std::size_t maxRequestSize, Func handlerFunc)
-            : HandlerBase(method, pattern, maxRequestSize, PayloadHandling::VectorInMemory), func(handlerFunc)
-        {}
-
-        std::size_t getRequiredParameterCount() const override { return Arity - 2; }
-
-        void handleRequest(Request& req, const std::vector<std::uint8_t>& payload) override {
-            Internal::Invoker<Arity - 2>::run(lastMatch, req, payload, func);
-        }
-    };
-
-    template<typename Func>
-    struct HandlerStringPayload : public HandlerBase {
-        Func func;
-
-        static constexpr std::size_t Arity = Internal::function_traits<Func>::arity;
-
-        HandlerStringPayload(std::string_view method, std::string_view pattern, std::size_t maxRequestSize, Func handlerFunc)
-            : HandlerBase(method, pattern, maxRequestSize, PayloadHandling::StringInMemory), func(handlerFunc)
-        {}
-
-        std::size_t getRequiredParameterCount() const override { return Arity - 2; }
-
-        void handleRequest(Request& req, std::string_view payload) override {
-            Internal::Invoker<Arity - 2>::run(lastMatch, req, payload, func);
-        }
-    };
-
-    template<typename Func>
-    struct HandlerLargeStringPayload : public HandlerBase {
-        Func func;
-
-        static constexpr std::size_t Arity = Internal::function_traits<Func>::arity;
-
-        HandlerLargeStringPayload(std::string_view method, std::string_view pattern, Func handlerFunc)
-            : HandlerBase(method, pattern, -1, PayloadHandling::LargeString), func(handlerFunc)
-        {}
-
-        std::size_t getRequiredParameterCount() const override { return Arity - 3; }
-
-        void handleRequest(Request& req, std::string_view payload, std::any& userData) override {
-            Internal::Invoker<Arity - 3>::template run(lastMatch, req, payload, userData, func);
-        }
-    };
-
-    template<typename Func>
-    struct HandlerLargeBinaryPayload : public HandlerBase {
-        Func func;
-
-        static constexpr std::size_t Arity = Internal::function_traits<Func>::arity;
-
-        HandlerLargeBinaryPayload(std::string_view method, std::string_view pattern, Func handlerFunc)
-            : HandlerBase(method, pattern, -1, PayloadHandling::LargeVector), func(handlerFunc)
-        {}
-
-        std::size_t getRequiredParameterCount() const override { return Arity - 3; }
-
-        void handleRequest(Request& req, const std::vector<std::uint8_t>& payload, std::any& userData) override {
-            Internal::Invoker<Arity - 3>::template run(lastMatch, req, payload, userData, func);
-        }
-    };
-
-    std::vector<std::unique_ptr<HandlerBase>> handlers_;
+    std::vector<std::unique_ptr<Internal::HandlerBase>> handlers_;
 
   public:
-    Router() = default;
-    ~Router();
-
-    template<typename Func>
-    void handleRequestWithNoPayload(
-        std::string_view method,
-        std::string_view pattern,
-        Func func) {
-
-        handlers_.emplace_back(std::make_unique<HandlerNoPayload<Func>>(method, pattern, func));
+    template <typename Func>
+    void handleRequest(std::string_view method, std::string_view pattern, Func func) {
+        handlers_.emplace_back(std::make_unique<Internal::Handler<Func>>(method, pattern, func));
     }
 
-    template<typename Func>
-    void handleRequestWithVectorPayload(
-        std::string_view method,
-        std::string_view pattern,
-        std::size_t maxSize,
-        Func func) {
-
-        handlers_.emplace_back(std::make_unique<HandlerVectorPayload<Func>>(method, pattern, maxSize, func));
-    }
-
-    template<typename Func>
-    void handleRequestWithStringPayload(
-        std::string_view method,
-        std::string_view pattern,
-        std::size_t maxSize,
-        Func func) {
-
-        handlers_.emplace_back(std::make_unique<HandlerStringPayload<Func>>(method, pattern, maxSize, func));
-    }
-
-    template<typename Func>
-    void handleRequestWithLargeStringPayload(
-        std::string_view method,
-        std::string_view pattern,
-        Func func) {
-
-        handlers_.emplace_back(std::make_unique<HandlerLargeStringPayload<Func>>(method, pattern, func));
-    }
-
-    template<typename Func>
-    void handleRequestWithLargeBinaryPayload(
-        std::string_view method,
-        std::string_view pattern,
-        Func func) {
-
-        handlers_.emplace_back(std::make_unique<HandlerLargeBinaryPayload<Func>>(method, pattern, func));
-    }
-
-    template<typename Func>
+    template <typename Func>
     void handleGet(std::string_view pattern, Func func) {
-        handleRequestWithNoPayload("GET", pattern, func);
+        handleRequest("GET", pattern, func);
     }
 
-    template<typename Func>
+    template <typename Func>
     void handleHead(std::string_view pattern, Func func) {
-        handleRequestWithNoPayload("HEAD", pattern, func);
+        handleRequest("HEAD", pattern, func);
     }
 
-    template<typename Func>
+    template <typename Func>
     void handleDelete(std::string_view pattern, Func func) {
-        handleRequestWithNoPayload("DELETE", pattern, func);
+        handleRequest("DELETE", pattern, func);
     }
 
-    template<typename Func>
+    template <typename Func>
     void handleOptions(std::string_view pattern, Func func) {
-        handleRequestWithNoPayload("OPTIONS", pattern, func);
+        handleRequest("OPTIONS", pattern, func);
     }
 
-    template<typename Func>
-    void handlePostBinary(std::string_view pattern, std::size_t maxDataSize, Func func) {
-        handleRequestWithVectorPayload("POST", pattern, maxDataSize, func);
+    template <typename Func>
+    void handlePost(std::string_view pattern, Func func) {
+        handleRequest("POST", pattern, func);
     }
 
-    template<typename Func>
-    void handlePostString(std::string_view pattern, std::size_t maxDataSize, Func func) {
-        handleRequestWithStringPayload("POST", pattern, maxDataSize, func);
+    template <typename Func>
+    void handlePut(std::string_view pattern, Func func) {
+        handleRequest("PUT", pattern, func);
     }
 
-    template<typename Func>
-    void handlePostLargeString(std::string_view pattern, Func func) {
-        handleRequestWithLargeStringPayload("POST", pattern, func);
+    template <typename Func>
+    void handlePatch(std::string_view pattern, Func func) {
+        handleRequest("PATCH", pattern, func);
     }
-
-    template<typename Func>
-    void handlePostLargeBinary(std::string_view pattern, Func func) {
-        handleRequestWithLargeBinaryPayload("POST", pattern, func);
-    }
-
-    template<typename Func>
-    void handlePutBinary(std::string_view pattern, std::size_t maxDataSize, Func func) {
-        handleRequestWithVectorPayload("PUT", pattern, maxDataSize, func);
-    }
-
-    template<typename Func>
-    void handlePutString(std::string_view pattern, std::size_t maxDataSize, Func func) {
-        handleRequestWithStringPayload("PUT", pattern, maxDataSize, func);
-    }
-
-    template<typename Func>
-    void handlePutLargeString(std::string_view pattern, Func func) {
-        handleRequestWithLargeStringPayload("PUT", pattern, func);
-    }
-
-    template<typename Func>
-    void handlePuLargeBinary(std::string_view pattern, Func func) {
-        handleRequestWithLargeBinaryPayload("PUT", pattern, func);
-    }
-
-    // FIXME: Add handlers for basic auth, not found, method not allowed
 
   protected:
     RequestResult onIncomingRequest(Internal::InternalRequest& request);
-
-    RequestResult onRequest(Internal::InternalRequest& request);
 
     RequestResult onRequest(Internal::InternalRequest& request, const char* data, std::size_t* byteCount);
 
@@ -412,3 +72,4 @@ class Router final {
 };
 
 } // namespace ARo::Http
+

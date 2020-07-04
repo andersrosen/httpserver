@@ -12,7 +12,7 @@ Server::~Server() = default;
 
 Server &
 Server::setHandler(std::unique_ptr<Router> handler) & {
-    impl_->setHandler(std::move(handler));
+    impl_->setRouter(std::move(handler));
     return *this;
 }
 

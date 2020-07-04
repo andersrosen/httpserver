@@ -1,14 +1,17 @@
 #pragma once
 
-#include <microhttpd.h>
-#include <map>
 #include <any>
+#include <map>
+#include <memory>
+#include <microhttpd.h>
+#include <regex>
 
 #include "../include/http/Request.h"
 
 namespace ARo::Http::Internal {
 
 class ServerImpl;
+class HandlerBase;
 
 class InternalRequest final : public ARo::Http::Request {
   public:
@@ -21,6 +24,8 @@ class InternalRequest final : public ARo::Http::Request {
         Ongoing // The request handling is ongoing. The request callback has already been called at least once
     };
 
+    std::optional<HandlerBase*> handler;
+    std::smatch match;
     std::vector<std::uint8_t> payload;
     std::any userData;
 
@@ -35,7 +40,7 @@ class InternalRequest final : public ARo::Http::Request {
     mutable KeyValues queryArgs_;
 
 
-    InternalRequest(const char* fullUrl);
+    explicit InternalRequest(const char* fullUrl);
 
     static std::string toLowerCase(std::string_view s);
 

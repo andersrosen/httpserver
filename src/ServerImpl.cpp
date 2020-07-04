@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "../include/http/Request.h"
-#include "../include/http/Router.h"
+#include "http/Router.h"
 
 ///////////////////////////////////////////////////////////////////////////
 // libmicrohttpd callbacks
@@ -79,8 +79,8 @@ ServerImpl::ServerImpl(std::uint16_t port)
 ServerImpl::~ServerImpl() = default;
 
 void
-ServerImpl::setHandler(std::unique_ptr<Router> handler) {
-    router_ = std::move(handler);
+ServerImpl::setRouter(std::unique_ptr<Router> router) {
+    router_ = std::move(router);
 }
 
 InternalRequest*
@@ -105,12 +105,6 @@ ServerImpl::onRequestData(
 ) {
     if (req->getState() == InternalRequest::State::Initialized) {
         req->setState(InternalRequest::State::Ongoing);
-        if (uploadData == nullptr) {
-            // There was no payload with this request
-            if (router_->onRequest(*req) == RequestResult::Success)
-                return MHD_YES; // Everything fine
-            return MHD_NO; // Failure - close the connection
-        }
     }
     if (router_->onRequest(*req, uploadData, uploadDataSize) == RequestResult::Success)
         return MHD_YES; // Everything fine

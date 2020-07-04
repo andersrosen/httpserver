@@ -51,6 +51,7 @@ target_sources(httpserver PRIVATE
 
     include/http/FunctionTraits.h
     include/http/Request.h
+    include/http/internal/RequestHandler.h
     include/http/Response.h
     include/http/Router.h
     include/http/Server.h
