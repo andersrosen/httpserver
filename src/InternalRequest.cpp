@@ -139,4 +139,14 @@ InternalRequest::setMethod(const char* method) {
     method_ = method;
 }
 
+void
+InternalRequest::setResponse(Http::Response& response) {
+    response_ = response;
+}
+
+void
+InternalRequest::setResponse(Http::Response&& response) {
+    response_ = std::move(response);
+}
+
 } // namespace ARo::Http::Internal

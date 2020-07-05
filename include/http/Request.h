@@ -5,10 +5,9 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include "Response.h"
 
 namespace ARo::Http {
-
-enum class RequestResponse;
 
 class Request {
   protected:
@@ -36,7 +35,8 @@ class Request {
     virtual std::optional<std::string> getQueryArg(std::string_view key) const = 0;
     virtual std::vector<std::string> getQueryArgValues(std::string_view key) const = 0;
 
-//    Response respondWithString(int responseCode, std::string_view contentType, std::string_view data);
+    virtual void setResponse(Http::Response &response) = 0;
+    virtual void setResponse(Http::Response &&response) = 0;
 };
 
 }

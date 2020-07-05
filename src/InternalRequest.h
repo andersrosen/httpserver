@@ -31,6 +31,7 @@ class InternalRequest final : public ARo::Http::Request {
 
   private:
     State state_ = State::Uninitialized;
+    std::optional<Response> response_;
 
     MHD_Connection* connection_ = nullptr;
 
@@ -38,7 +39,6 @@ class InternalRequest final : public ARo::Http::Request {
     mutable KeyValues headers_;
     mutable bool haveQueryArgs_ = false;
     mutable KeyValues queryArgs_;
-
 
     explicit InternalRequest(const char* fullUrl);
 
@@ -60,6 +60,9 @@ class InternalRequest final : public ARo::Http::Request {
     std::vector<std::string> getHeaderValues(std::string_view header) const override;
     std::optional<std::string> getQueryArg(std::string_view key) const override;
     std::vector<std::string> getQueryArgValues(std::string_view key) const override;
+
+    void setResponse(Http::Response& response) override;
+    void setResponse(Http::Response&& response) override;
 };
 
 } // namespace ARo::Http::Internal

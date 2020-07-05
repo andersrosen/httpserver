@@ -3,7 +3,7 @@
 namespace ARo::Http {
 
 Request::Request(std::string_view fullUrl)
-    : fullUrl_(fullUrl)
+: fullUrl_(fullUrl)
 {}
 
 Request::~Request() = default;

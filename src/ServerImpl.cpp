@@ -1,6 +1,10 @@
 #include "ServerImpl.h"
 
+#include <fcntl.h>
 #include <iostream>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "../include/http/Request.h"
 #include "http/Router.h"
@@ -106,8 +110,51 @@ ServerImpl::onRequestData(
     if (req->getState() == InternalRequest::State::Initialized) {
         req->setState(InternalRequest::State::Ongoing);
     }
-    if (router_->onRequest(*req, uploadData, uploadDataSize) == RequestResult::Success)
+    if (router_->onRequest(*req, uploadData, uploadDataSize) == RequestResult::Success) {
+        if (req->response_.has_value()) {
+            auto &resp = *(req->response_);
+            MHD_Response *mhdResponse = nullptr;
+
+            switch (resp.type_) {
+            case Response::Type::Buffer: {
+                mhdResponse = MHD_create_response_from_buffer(
+                    resp.body_.length(), (void*)resp.body_.c_str(), MHD_RESPMEM_PERSISTENT);
+                break;
+            }
+            case Response::Type::File: {
+                int fd = open(resp.filePath_.c_str(), O_RDONLY);
+                if (fd == -1)
+                    throw std::runtime_error("FileResponse: Failed to open file for reading");
+                mhdResponse = MHD_create_response_from_fd64(resp.fileLength_, fd);
+                break;
+            }
+            case Response::Type::PartialFile: {
+                int fd = open(resp.filePath_.c_str(), O_RDONLY);
+                if (fd == -1)
+                    throw std::runtime_error("FileResponse: Failed to open file for reading");
+                std::cerr << "Reading " << resp.fileLength_ << " bytes from offset " << resp.fileOffset_ << std::endl;
+                mhdResponse = MHD_create_response_from_fd_at_offset64(resp.fileLength_, fd, resp.fileOffset_);
+                break;
+            }}
+
+            if (mhdResponse == nullptr)
+                throw std::runtime_error("Failed to queue response!");
+
+            for (const auto &[key, val] : resp.headers) {
+                auto res = MHD_add_response_header(mhdResponse, key.c_str(), val.c_str());
+                if (res == MHD_NO) {
+                    MHD_destroy_response(mhdResponse);
+                    throw std::runtime_error("Failed to set response header");
+                }
+            }
+
+            auto res = MHD_queue_response(req->connection_, resp.status_.code, mhdResponse);
+            MHD_destroy_response(mhdResponse);
+            return res;
+        }
+
         return MHD_YES; // Everything fine
+    }
     return MHD_NO; // Failure - close the connection
 }
 
