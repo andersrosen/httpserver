@@ -36,9 +36,7 @@ Router::onRequest(Internal::InternalRequest& request, const char* data, std::siz
     auto payloadHandling = handler->payloadHandling;
 
     if (payloadHandling == Internal::PayloadHandling::RawHandling) {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        const char* pl = reinterpret_cast<const char*>(request.payload.data());
-        handler->run(request.match, pl, *byteCount, request.userData, request);
+        handler->run(request.match, data, *byteCount, request.userData, request);
         return RequestResult::Success;
     }
 

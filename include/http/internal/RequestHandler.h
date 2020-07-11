@@ -207,7 +207,7 @@ namespace ARo::Http::Internal {
         FuncType func;
 
         HandlerT(std::string_view method, std::string_view pattern, FuncType f)
-                : HandlerBase(method, pattern, UrlParameterCount)
+                : HandlerBase(method, pattern, UrlParameterCount, PayloadHandling::RawHandling)
                 , func(f)
         {}
 
