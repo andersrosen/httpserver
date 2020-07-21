@@ -42,6 +42,7 @@ target_compile_features(httpserver PUBLIC cxx_std_17)
 target_sources(httpserver PRIVATE
     src/InternalRequest.cpp
     src/InternalRequest.h
+    src/MHDUtil.h
     src/Request.cpp
     src/Response.cpp
     src/Router.cpp

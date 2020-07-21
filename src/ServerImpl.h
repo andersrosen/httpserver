@@ -8,6 +8,7 @@
 #include "../include/http/Request.h"
 #include "../include/http/Server.h"
 #include "InternalRequest.h"
+#include "MHDUtil.h"
 
 namespace ARo::Http {
     class OldRouter;
@@ -16,11 +17,8 @@ namespace ARo::Http {
 namespace ARo::Http::Internal {
 
 class ServerImpl {
-    struct MhdDaemonDeleter {
-        void operator()(struct MHD_Daemon* p) { MHD_stop_daemon(p); }
-    };
 
-    std::unique_ptr<struct MHD_Daemon, MhdDaemonDeleter> daemon_;
+    MhdDaemon daemon_;
     std::vector<InternalRequest> requests_;
     std::unique_ptr<Router> router_;
 
