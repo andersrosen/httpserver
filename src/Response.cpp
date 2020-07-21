@@ -3,7 +3,7 @@
 using namespace ARo::Http;
 
 const Response::Status Response::Status::ok{200, "OK"};
-
+const Response::Status Response::Status::created{201, "Created"};
 const Response::Status Response::Status::notFound{404, "Not found"};
 
 Response::~Response() = default;

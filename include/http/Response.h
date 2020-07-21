@@ -18,6 +18,7 @@ namespace ARo::Http {
             std::string description;
 
             static const Status ok;
+            static const Status created;
             static const Status notFound;
         };
 
