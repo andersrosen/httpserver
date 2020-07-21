@@ -15,7 +15,7 @@ namespace ARo::Http::Internal {
     //
     // The resulting type is available in the "type" type alias
     template <typename T, typename Enable = void>
-    class Signature;
+    struct Signature;
 
     template <typename T>
     struct Signature<T, typename std::enable_if_t<!std::is_pointer_v<T>>>
