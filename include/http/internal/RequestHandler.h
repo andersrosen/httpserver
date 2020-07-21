@@ -94,10 +94,11 @@ namespace ARo::Http::Internal {
             return true;
         }
 
-        virtual void run(const std::smatch &match, ARo::Http::Request &req) const {}
-        virtual void run(const std::smatch &match, std::string_view payload, ARo::Http::Request &req) const {}
-        virtual void run(const std::smatch &match, const std::vector<std::uint8_t>& payload, ARo::Http::Request &req) const {}
-        virtual void run(const std::smatch &match, const char *payloadData, std::size_t &size, std::any &userData, ARo::Http::Request &req) const {}
+        virtual void run(const std::smatch &match, ARo::Http::Request &req) {}
+        virtual void run(const std::smatch &match, std::string_view payload, ARo::Http::Request &req) {}
+        virtual void run(const std::smatch &match, const std::vector<std::uint8_t>& payload, ARo::Http::Request &req) {}
+        virtual void run(const std::smatch &match, const char *payloadData, std::size_t &size, std::any &userData, ARo::Http::Request &req) {}
+        virtual void run(const std::smatch &match, const RequestDataPart &part, std::any &userData, ARo::Http::Request &req) {}
     };
 
     template <typename, typename> struct HandlerT;
@@ -140,10 +141,10 @@ namespace ARo::Http::Internal {
         {}
 
         template <std::size_t... Is>
-        void do_run(const std::smatch &match, ARo::Http::Request &req, std::index_sequence<Is...>) const {
+        void do_run(const std::smatch &match, ARo::Http::Request &req, std::index_sequence<Is...>) {
             func(req, match[Is + 1].str()...);
         }
-        void run(const std::smatch &match, ARo::Http::Request &req) const final {
+        void run(const std::smatch &match, ARo::Http::Request &req) final {
             do_run(match, req, std::make_index_sequence<UrlParameterCount>{});
         }
     };
@@ -164,10 +165,10 @@ namespace ARo::Http::Internal {
         {}
 
         template <std::size_t... Is>
-        void do_run(const std::smatch &match, std::string_view &payload, ARo::Http::Request &req, std::index_sequence<Is...>) const {
+        void do_run(const std::smatch &match, std::string_view &payload, ARo::Http::Request &req, std::index_sequence<Is...>) {
             func(payload, req, match[Is + 1].str()...);
         }
-        void run(const std::smatch &match, std::string_view payload, ARo::Http::Request &req) const final {
+        void run(const std::smatch &match, std::string_view payload, ARo::Http::Request &req) final {
             do_run(match, payload, req, std::make_index_sequence<UrlParameterCount>{});
         }
     };
@@ -188,16 +189,16 @@ namespace ARo::Http::Internal {
         {}
 
         template <std::size_t... Is>
-        void do_run(const std::smatch &match, const std::vector<std::uint8_t> &payload, ARo::Http::Request &req, std::index_sequence<Is...>) const {
+        void do_run(const std::smatch &match, const std::vector<std::uint8_t> &payload, ARo::Http::Request &req, std::index_sequence<Is...>) {
             func(payload, req, match[Is + 1].str()...);
         }
-        void run(const std::smatch &match, const std::vector<std::uint8_t> &payload, ARo::Http::Request &req) const final {
+        void run(const std::smatch &match, const std::vector<std::uint8_t> &payload, ARo::Http::Request &req) final {
             do_run(match, payload, req, std::make_index_sequence<UrlParameterCount>{});
         }
     };
 
     //
-    // Handlers that take payload by repeatedly being called with chunks of data.
+    // Handlers that take payload by repeatedly being called with chunks of raw payload data.
     //
     template <typename FuncType, typename... Rest>
     struct HandlerT<FuncType, void (*)(const char *, std::size_t &, std::any &, ARo::Http::Request &, Rest...)>
@@ -212,11 +213,11 @@ namespace ARo::Http::Internal {
         {}
 
         template <std::size_t... Is>
-        void do_run(const std::smatch &match, const char *payloadData, std::size_t &size, std::any &userData, ARo::Http::Request &req, std::index_sequence<Is...>) const {
+        void do_run(const std::smatch &match, const char *payloadData, std::size_t &size, std::any &userData, ARo::Http::Request &req, std::index_sequence<Is...>) {
             func(payloadData, size, userData, req, match[Is + 1].str()...);
         }
 
-        void run(const std::smatch &match, const char *payloadData, std::size_t &size, std::any &userData, ARo::Http::Request &req) const final {
+        void run(const std::smatch &match, const char *payloadData, std::size_t &size, std::any &userData, ARo::Http::Request &req) final {
             do_run(match, payloadData, size, userData, req, std::make_index_sequence<UrlParameterCount>{});
         }
     };
