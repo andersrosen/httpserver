@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace ARo::Http {
 
@@ -56,6 +57,14 @@ namespace ARo::Http {
         StringResponse(Status status, std::string_view body);
         StringResponse(Status status, HeaderMap headers, std::string_view body);
         StringResponse(Status status, std::string_view contentType, std::string_view body);
+    };
+
+    class BinaryResponse final : public Response {
+    public:
+        BinaryResponse(Status status, const std::vector<std::uint8_t>& body);
+        BinaryResponse(Status status, HeaderMap headers, const std::vector<std::uint8_t>& body);
+        BinaryResponse(Status status, std::string_view contentType, const std::vector<std::uint8_t>& body);
+        // FIXME! Start & End iterator versions
     };
 
     class FileResponse final : public Response {

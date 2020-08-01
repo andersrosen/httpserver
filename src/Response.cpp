@@ -47,6 +47,25 @@ StringResponse::StringResponse(Status status, std::string_view contentType, std:
     body_ = body;
 }
 
+BinaryResponse::BinaryResponse(Status status, const std::vector<std::uint8_t>& body)
+: Response(Type::Buffer, std::move(status))
+{
+    body_.assign(reinterpret_cast<const char*>(body.data()), body.size());
+}
+
+BinaryResponse::BinaryResponse(Status status, HeaderMap headers, const std::vector<std::uint8_t>& body)
+: Response(Type::Buffer, std::move(status), std::move(headers))
+{
+    body_.assign(reinterpret_cast<const char*>(body.data()), body.size());
+}
+
+BinaryResponse::BinaryResponse(Status status, std::string_view contentType, const std::vector<std::uint8_t>& body)
+: Response(Type::Buffer, std::move(status))
+{
+    headers["Content-Type"] = std::string(contentType);
+    body_.assign(reinterpret_cast<const char*>(body.data()), body.size());
+}
+
 FileResponse::FileResponse(Status status, std::filesystem::path path)
 : Response(Type::File, std::move(status))
 {
