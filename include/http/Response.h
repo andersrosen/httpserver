@@ -20,7 +20,9 @@ namespace ARo::Http {
 
             static const Status ok;
             static const Status created;
+
             static const Status notFound;
+            static const Status unsupportedMediaType;
         };
 
     protected:
