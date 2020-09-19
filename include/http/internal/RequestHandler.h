@@ -98,7 +98,6 @@ namespace ARo::Http::Internal {
         virtual void run(const std::smatch &match, std::string_view payload, ARo::Http::Request &req) {}
         virtual void run(const std::smatch &match, const std::vector<std::uint8_t>& payload, ARo::Http::Request &req) {}
         virtual void run(const std::smatch &match, const char *payloadData, std::size_t &size, std::any &userData, ARo::Http::Request &req) {}
-        virtual void run(const std::smatch &match, const RequestDataPart &part, std::any &userData, ARo::Http::Request &req) {}
     };
 
     template <typename, typename> struct HandlerT;
